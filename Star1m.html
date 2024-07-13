@@ -3,28 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JW Player Live DASH Stream</title>
-    <script src="https://content.jwplatform.com/libraries/SAHhwvZq.js"></script>
+    <title>Clearkey DRM Video Player</title>
+    <style>
+        video {
+            width: 100%;
+            height: auto;
+        }
+    </style>
 </head>
 <body>
-    <div id="jw-player"></div>
-
+    <video id="video" controls></video>
     <script>
-        jwplayer("jw-player").setup({
-            playlist: [{
-                file: "https://bpprod3catchup.akamaized.net/bpk-tv/irdeto_com_Channel_252/output/criccoder.mpd",
-                type: "mpd",
-                drm: {
-                    clearkey: {
-                        "972504628ce7573b89afe10e7fbb4819": "cd91a5f9b74fd176b84efa04332f9201"
-                    }
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('video');
+            const manifestUrl = 'https://bpprod3catchup.akamaized.net/bpk-tv/irdeto_com_Channel_252/output/criccoder.mpd';
+            
+            // Define the Clearkey license
+            const clearkeyLicense = {
+                'kid': '972504628ce7573b89afe10e7fbb4819',
+                'key': 'cd91a5f9b74fd176b84efa04332f9201'
+            };
+
+            // Function to convert hex string to ArrayBuffer
+            function hexStringToArrayBuffer(hexString) {
+                const len = hexString.length / 2;
+                const arrayBuffer = new ArrayBuffer(len);
+                const uint8Array = new Uint8Array(arrayBuffer);
+                for (let i = 0; i < len; i++) {
+                    uint8Array[i] = parseInt(hexString.substr(i * 2, 2), 16);
                 }
-            }],
-            width: "100%",
-            aspectratio: "16:9",
-            autostart: true,
-            controls: true,
-            primary: "html5"
+                return arrayBuffer;
+            }
+
+            // Load the video
+            function loadVideo() {
+                if (!video.canPlayType('application/mpd+xml')) {
+                    alert('Your browser does not support MPEG-DASH.');
+                    return;
+                }
+
+                video.src = manifestUrl;
+
+                // Handle the 'encrypted' event to provide the key
+                video.addEventListener('encrypted', (event) => {
+                    const keySystem = 'org.w3.clearkey';
+                    const keySystemConfig = [{
+                        initDataTypes: ['cenc'],
+                        audioCapabilities: [],
+                        videoCapabilities: [],
+                    }];
+
+                    navigator.requestMediaKeySystemAccess(keySystem, keySystemConfig)
+                        .then((keySystemAccess) => {
+                            return keySystemAccess.createMediaKeys();
+                        })
+                        .then((mediaKeys) => {
+                            return video.setMediaKeys(mediaKeys);
+                        })
+                        .then(() => {
+                            const session = video.mediaKeys.createSession();
+                            return new Promise((resolve, reject) => {
+                                session.addEventListener('message', (event) => {
+                                    const message = event.message;
+                                    const licenseRequest = {
+                                        'keys': [
+                                            {
+                                                'kid': hexStringToArrayBuffer(clearkeyLicense.kid),
+                                                'key': hexStringToArrayBuffer(clearkeyLicense.key)
+                                            }
+                                        ]
+                                    };
+                                    session.update(new Uint8Array(message));
+                                });
+
+                                session.addEventListener('error', reject);
+                                session.generateRequest('cenc', new Uint8Array([0]));
+                            });
+                        })
+                        .catch(console.error);
+                });
+
+                video.play().catch(console.error);
+            }
+
+            loadVideo();
         });
     </script>
 </body>
