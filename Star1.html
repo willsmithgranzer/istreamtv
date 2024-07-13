@@ -1,213 +1,106 @@
-
-
 <!DOCTYPE html>
-<html lang="en">
-
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Willow - iStreamFlare</title>
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://willsmithgranzer.github.io/istreamtv/jw.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Arial', sans-serif;
-      background-color: #000000;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 90vh;
-    }
-    
-    #videoForm {
-      background-color: #000000;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      text-align: center;
-    }
-
-    #announcement {
-      margin-bottom: 16px;
-      color: #000000;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 16px;
-      box-sizing: border-box;
-      border: 1px solid #666;
-      border-radius: 4px;
-      font-size: 14px;
-      background-color: #555;
-      color: #fff;
-    }
-
-    input[type="button"] {
-      background-color: #4caf50;
-      color: white;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: bold;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-    }
-
-    .jwplayer {
-      position: absolute !important
-    }
-
-    .jwplayer.jw-flag-aspect-mode {
-      min-height: 100%;
-      max-height: 100%
-    }
-  </style>
+    <meta name="referrer" content="no-referrer"/>
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
+    <meta name='viewport' content='width=device-width,initial-scale=1'>
+    <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.9.4/dist/shaka-player.compiled.min.js"></script>
 </head>
+<body bgcolor=black text="#ffffff" style="font-family:sans-serif">
+<p>Media URL<br>
+    <input type=text size=64 id=mediaurl autocomplete="on" value="https://bpprod3catchup.akamaized.net/bpk-tv/irdeto_com_Channel_252/output/criccoder.mpd">
+<table>
+    <tr>
+        <td>kid</td>
+        <td>key</td>
+    </tr>
+    <tr>
+        <td><input type=text size=32 id=kid autocomplete="on" value="972504628ce7573b89afe10e7fbb4819"></td>
+        <td><input type=text size=32 id=key autocomplete="on" value="cd91a5f9b74fd176b84efa04332f9201"></td>
+    </tr>
+    <tr>
+        <td>MinHeight</td>
+        <td>MinBitrate</td>
+    </tr>
+    <tr>
+        <td><input type=text size=4 id=height autocomplete="on" value="720"></td>
+        <td><input type=text size=4 id=minBW autocomplete="on" value="0"></td>
+    </tr>
+</table>
 
-
-<script src="https://willsmithgranzer.github.io/istreamtv/jw.js"></script>   
-<div id="jwplayerDiv"></div>   
-<script type="text/javascript">   
-jwplayer("jwplayerDiv").setup({   
-        file: "https://bpprod3catchup.akamaized.net/bpk-tv/irdeto_com_Channel_252/output/criccoder.mpd",   
-      type: "dash",   
-      drm: { "clearkey": {   
-              "keyId": "972504628ce7573b89afe10e7fbb4819",   
-              "key": "cd91a5f9b74fd176b84efa04332f9201"   
-            }   
-             }   
-});   
-</script>
-<script>  
-
-
-    </script>                                                                                                                       <script>(function(s,u,z,p){s.src=u,s.setAttribute('data-zone',z),p.appendChild(s);})(document.createElement('script'),'https://inklinkor.com/tag.min.js',5885867,document.body||document.documentElement)</script>
-
- <script type="text/javascript">
-    // Check if JWPlayer is loaded
-    function waitForJWPlayer(callback) {
-      if (typeof jwplayer === 'function') {
-        // JWPlayer is loaded, execute callback
-        callback();
-      } else {
-        // JWPlayer not yet loaded, wait and check again
-        setTimeout(function () {
-          waitForJWPlayer(callback);
-        }, 100);
-      }
+<p><input type=button value=PLAY onclick='load()'>
+</p>
+<div id=vid_and_stats hidden=true>
+    <video id="video" style="max-width: 80%; min-width: 80%; margin: 10%" autoplay controls></video>
+    <p>Stats<br>
+        <textarea id=stats rows=70 style="max-width: 80%; min-width: 80%; margin: 10%"></textarea>
+</div>
+<script>
+    const player = new shaka.Player();
+    const urlParams = new URLSearchParams(window.location.hash.substr(1))
+    mediaurl.value = urlParams.get("url") || mediaurl.value;
+    kid.value = urlParams.get("kid") || kid.value;
+    key.value = urlParams.get("key") || key.value;
+    if (urlParams.get("height") != null) {
+        height.value = urlParams.get("height");
+    }
+    if (urlParams.get("minBW") != null) {
+        minBW.value = urlParams.get("minBW");
     }
 
-    function playVideo() {
-      // Hide the form after starting the video
-      var videoForm = document.getElementById("videoForm");
-      videoForm.style.display = "none";
-
-      // Make the JWPlayer fullscreen
-      var jwplayerDiv = document.getElementById("jwplayerDiv");
-      jwplayerDiv.classList.add("jwplayer-fullscreen");
-
-      // Wait for JWPlayer to be fully loaded and then set up the video player
-      waitForJWPlayer(function () {
-        setupVideoPlayer();
-      });
-    }
-
-    function setupVideoPlayer() {
-      var manifestInput = document.getElementById("manifest");
-      var keyIdInput = document.getElementById("keyId");
-      var keyInput = document.getElementById("key");
-
-      var manifest = manifestInput.value;
-      var keyId = keyIdInput.value;
-      var key = keyInput.value;
-
-      var playerConfig = {
-        file: manifest,
-        autostart: true,
-        stretching: "",
-        width: "100%",
-        type: "dash",
-      };
-
-      if (keyId && key) {
-        // DRM settings only if both keyId and key are provided
-        playerConfig.drm = {
-          clearkey: {
-            keyId: keyId,
-            key: key,
-          },
-        };
-      }
-
-      jwplayer("jwplayerDiv").setup(playerConfig);
-    }
-
-    // Function to get URL parameters
-    function getParameterByName(name, url) {
-      if (!url) url = window.location.href;
-      name = name.replace(/[\[\]]/g, "\\$&");
-      var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-        results = regex.exec(url);
-      if (!results) return null;
-      if (!results[2]) return '';
-      return decodeURIComponent(results[2].replace(/\+/g, " "));
-    }
-
-    // Get parameters from the URL
-    var fileUrl = getParameterByName('emmbed-url');
-    var kid = getParameterByName('kid');
-    var key = getParameterByName('key');
-
-    // Determine stream type
-    var isMpd = fileUrl.endsWith('.mpd');
-    var isM3U8 = fileUrl.endsWith('.m3u8');
-
-    // Set up JWPlayer
-    var playerSetup = {
-      file: fileUrl,
-      position: 'bottom',
-      autostart: true,
-      stretching: "",
-      width: "100%"
-    };
-
-    if (isMpd) {
-      // Set up DRM for DASH with keys
-      playerSetup.type = 'dash';
-      playerSetup.drm = {
-        clearkey: {
-          keyId: kid,
-          key: key
+    function initApp() {
+        shaka.polyfill.installAll();
+        if (shaka.Player.isBrowserSupported()) {
+            initPlayer();
+        } else {
+            console.error('Browser not supported!');
         }
-      };
-    } else if (isM3U8) {
-      // Set up DRM for HLS with keys
-      playerSetup.type = 'hls';
-      if (kid && key) {
-        playerSetup.drm = {
-          clearkey: {
-            keyId: kid,
-            key: key
-          }
-        };
-      }
-    } else {
-      // Default to HLS without keys
-      playerSetup.type = 'hls';
     }
 
-    jwplayer("jwplayerDiv").setup(playerSetup);
-  </script>
-</body>
+    async function initPlayer() {
+        const video = document.getElementById('video');
+        await player.attach(video);
+        window.player = player;
+        player.addEventListener('error', onErrorEvent);
+    }
 
+    function onErrorEvent(event) {
+        onError(event.detail);
+    }
+
+    function onError(error) {
+        console.error('Error code', error.code, 'object', error);
+    }
+
+    document.addEventListener('DOMContentLoaded', initApp);
+
+    async function load() {
+        try {
+            vid_and_stats.hidden = true
+            let config = JSON.parse('{\"streaming\": {\"lowLatencyMode\": true},\"restrictions\": {\"minHeight\":' + height.value + ', \"minBandwidth\":' + minBW.value + '}}');
+            config.drm = {};
+            config.drm.clearKeys = {};
+            for (const [k, v] of urlParams) {
+                if (k.startsWith('kid')) {
+                    Object.assign(config.drm.clearKeys, {[v]: urlParams.get(k.replace("kid", "key"))});
+                }
+            }
+            // Pre-fill the clear key values if not set by URL parameters
+            if (!Object.keys(config.drm.clearKeys).length) {
+                config.drm.clearKeys[kid.value] = key.value;
+            }
+            console.log(config);
+            player.configure(config);
+            await player.load(mediaurl.value);
+            console.log('The video has now been loaded!');
+            vid_and_stats.hidden = false
+            setInterval(function () {
+                stats.value = "FrameRate - " + player.getVariantTracks().filter(track => track.active == true)[0].frameRate + "\n" + JSON.stringify(player.getStats(), null, 4);
+            }, 3000);
+        } catch (e) {
+            onError(e);
+        }
+    }
+</script>
+</body>
 </html>
